@@ -12,7 +12,7 @@
 ## Installation
 
 ```bash
-pip install git+https://github.com/ElectroBlocks/python.git
+pip install electroblocks
 ```
 
 ## Example
