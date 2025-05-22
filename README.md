@@ -31,7 +31,3 @@ eb.lcd_clear()
 eb.digital_write(13, 1)
 eb.close()
 ```
-
-## License
-
-MIT
