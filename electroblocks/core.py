@@ -20,7 +20,7 @@ class ElectroBlocks:
         raise Exception("No Arduino Uno or Mega found.")
 
     def _wait_for_ready(self):
-        self.ser.write(b"IAM_READY|\n")
+        self.ser.write(b"IAM_READY|")
         while True:
             if self.ser.in_waiting:
                 line = self.ser.readline().decode().strip()
