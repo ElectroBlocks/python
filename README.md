@@ -12,7 +12,7 @@
 ## Installation
 
 ```bash
-pip install git+https://github.com/ElectroBlocks/python.git
+pip install electroblocks
 ```
 
 ## Example
@@ -31,7 +31,3 @@ eb.lcd_clear()
 eb.digital_write(13, 1)
 eb.close()
 ```
-
-## License
-
-MIT
