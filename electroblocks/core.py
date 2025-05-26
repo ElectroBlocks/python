@@ -23,7 +23,7 @@ class ElectroBlocks:
         self.ser.write(b"IAM_READY|")
         while True:
             if self.ser.in_waiting:
-                line = self.ser.readline().decode().strip()
+                line = self.ser.readline().decode("utf-8", errors="ignore").strip()
                 if "System:READY" in line:
                     break
 
