@@ -6,11 +6,11 @@ class ElectroBlocks:
     def __init__(self, baudrate=115200, timeout=2):
         self.ser = self._auto_connect(baudrate, timeout)
         self._wait_for_ready()
-
+    
     def _auto_connect(self, baudrate, timeout):
         ports = list(serial.tools.list_ports.comports())
         for p in ports:
-            if p.vid == 9025 and p.pid in (67, 16): # Arduino Uno or Mega
+            if (p.vid == 9025 and p.pid in (67, 16)) or (p.vid == 6790 and p.id in (29987)): # Arduino Uno or Mega and Indian Arduino UNO
                 try:
                     ser = serial.Serial(p.device, baudrate, timeout=timeout)
                     time.sleep(2)  # Give Arduino time to reset
