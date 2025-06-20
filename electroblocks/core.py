@@ -50,11 +50,28 @@ class ElectroBlocks:
     def config_lcd(self, rows=2, cols=16):
         self._send(f"config:lcd={rows},{cols}")
 
+
+    # LCD Methods
+
     def lcd_print(self, row, col, message):
         self._send(f"l:{row}:{col}:{message}")
 
     def lcd_clear(self):
         self._send("l:clear")
+
+    def lcd_toggle_backlight(self, on):
+        if on:
+            self._send("l:backlighton")
+        else:
+            self._send("l:backlightoff")
+
+    def lcd_blink_curor(self, row, col, on):
+        if on == True:
+            self._send(f"l:cursor_on:{row}:{col}")
+        else:
+            self._send(f"l:cursor_off:{row}:{col}")
+
+    # LCD Methods
 
     def digital_write(self, pin, value):
         self._send(f"dw:{pin}:{value}")
