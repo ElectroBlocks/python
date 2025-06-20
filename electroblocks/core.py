@@ -71,6 +71,12 @@ class ElectroBlocks:
         else:
             self._send(f"l:cursor_off:{row}:{col}")
 
+    def lcd_scrollright(self):
+        self._send("l:scroll_right")
+
+    def lcd_scrollleft(self):
+        self._send("l:scroll_left")
+
     # LCD Methods
 
     def digital_write(self, pin, value):
