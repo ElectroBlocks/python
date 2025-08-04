@@ -2,6 +2,12 @@
 
 **ElectroBlocks** is a Python library for communicating with Arduino-based educational hardware using a custom serial protocol. It simplifies control of servos, RGB LEDs, LCD screens, and more—especially in block-based coding environments like Blockly.
 
+## Upgrade To New Version
+
+- Go to this file [pyproject.toml](pyproject.toml)
+- Change the version number by .1 `version = "0.1.8"`
+- Push to main
+
 ## Features
 
 - Auto-detects the first available Arduino Uno or Mega over USB

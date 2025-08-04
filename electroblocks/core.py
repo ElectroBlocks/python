@@ -3,6 +3,9 @@ import serial.tools.list_ports
 import time
 
 class ElectroBlocks:
+
+    last_sense_data = ""
+
     def __init__(self, baudrate=115200, timeout=2):
         self.ser = self._auto_connect(baudrate, timeout)
         self._wait_for_ready()
@@ -15,43 +18,76 @@ class ElectroBlocks:
                     ser = serial.Serial(p.device, baudrate, timeout=timeout)
                     time.sleep(2)  # Give Arduino time to reset
                     return ser
-                except serial.SerialException:
+                except serial.SerialException as e:
+                    print(f"Failed to connect to {e}. Trying next port...")
                     continue
         raise Exception("No Arduino Uno or Mega found.")
 
-    def _wait_for_ready(self):
-        self.ser.write(b"IAM_READY|")
+    def _wait_for_message(self, message):
         while True:
             if self.ser.in_waiting:
                 line = self.ser.readline().decode("utf-8", errors="ignore").strip()
-                if "System:READY" in line:
-                    break
+                if message in line:
+                    return line
+
+    def _get_sensor_str(self):
+        self._send("sense")
+        message = self._wait_for_message("SENSE_COMPLETE")
+        message = message.replace("SENSE_COMPLETE", "")
+        sensorsStr = message.split(";")
+        return sensorsStr
+    
+    # return the result of pin read that is being sensed
+    def _find_sensor_str(self, sensorPin, sensorType):
+        sensorsStr = self._get_sensor_str()
+        for sensor in sensorsStr:
+            if len(sensor) == 0:
+                continue
+            [type, pin, result] = sensor.split(":")
+            if (type == sensorType and pin == str(sensorPin)):
+                return result
+
+        return ""
+
+    def _wait_for_ready(self):
+        self.ser.write(b"IAM_READY|")
+        self._wait_for_message("System:READY")
 
     def _send(self, cmd):
         self.ser.write((cmd + "|\n").encode())
-        while True:
-            if self.ser.in_waiting:
-                line = self.ser.readline().decode().strip()
-                if "DONE_NEXT_COMMAND" in line:
-                    break
+        self._wait_for_message("DONE_NEXT_COMMAND")
 
+    # Digital Write Method
+    def config_digital_read(self, pin):
+        self._send(f"config:b={pin}")
+
+    def digital_read(self, pin):
+        return self._find_sensor_str(pin, "dr") == "1"
+
+    # Button Methods
+    def config_button(self, pin):
+        self._send(f"config:b={pin}")
+
+    def is_button_pressed(self, pin):
+        return self._find_sensor_str(pin, "b") == "0"
+
+    # Servo Methods
     def config_servo(self, pin):
         self._send(f"config:servo={pin}")
 
     def move_servo(self, pin, angle):
         self._send(f"s:{pin}:{angle}")
 
+    # RGB Methods
     def config_rgb(self, r_pin, g_pin, b_pin):
         self._send(f"config:rgb={r_pin},{g_pin},{b_pin}")
 
     def set_rgb(self, r, g, b):
         self._send(f"rgb:{r},{g},{b}")
 
+    # LCD Methods
     def config_lcd(self, rows=2, cols=16):
         self._send(f"config:lcd={rows},{cols}")
-
-
-    # LCD Methods
 
     def lcd_print(self, row, col, message):
         self._send(f"l:{row}:{col}:{message}")
@@ -77,8 +113,7 @@ class ElectroBlocks:
     def lcd_scrollleft(self):
         self._send("l:scroll_left")
 
-    # LCD Methods
-
+    # LED Methods
     def digital_write(self, pin, value):
         self._send(f"dw:{pin}:{value}")
 
