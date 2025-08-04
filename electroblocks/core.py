@@ -63,6 +63,13 @@ class ElectroBlocks:
 
     def digital_read(self, pin):
         return self._find_sensor_str(pin, "dr") == "1"
+    
+    # Motion Sensors
+    def config_motion_sensor(self, echoPin, trigPin):
+        self._send(f"config:m={echoPin},{trigPin}")
+
+    def motion_distance_cm(self):
+        return self._find_sensor_str("0", "m")
 
     # Button Methods
     def config_button(self, pin):
