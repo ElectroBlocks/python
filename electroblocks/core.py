@@ -5,9 +5,11 @@ import time
 class ElectroBlocks:
 
     last_sense_data = ""
+    verbose = False
 
-    def __init__(self, baudrate=115200, timeout=2):
+    def __init__(self, baudrate=9600, timeout=2, verbose = False):
         self.ser = self._auto_connect(baudrate, timeout)
+        self.verbose = verbose
         self._wait_for_ready()
     
     def _auto_connect(self, baudrate, timeout):
@@ -22,17 +24,31 @@ class ElectroBlocks:
                     print(f"Failed to connect to {e}. Trying next port...")
                     continue
         raise Exception("No Arduino Uno or Mega found.")
+    
+    def _drain_serial(self):
+        """Drains/clears the serial port input buffer of any unread messages."""
+        if self.ser and self.ser.is_open:
+            self.ser.reset_input_buffer()
+
 
     def _wait_for_message(self, message):
-        while True:
+        count = 0
+        while count < 10:
             if self.ser.in_waiting:
                 line = self.ser.readline().decode("utf-8", errors="ignore").strip()
                 if message in line:
                     return line
+            count += 1
+            time.sleep(0.05)
+        if self.verbose:
+            print(f"DEBUG: MESSAGE NOT FOUND: '{message}'")
+        return ""
 
     def _get_sensor_str(self):
-        self._send("sense")
+        self.ser.write(b"sense|")
         message = self._wait_for_message("SENSE_COMPLETE")
+        if self.verbose:
+            print(f"FULL SENSOR MESSSAGE: {message}")
         message = message.replace("SENSE_COMPLETE", "")
         sensorsStr = message.split(";")
         return sensorsStr
@@ -63,6 +79,23 @@ class ElectroBlocks:
 
     def digital_read(self, pin):
         return self._find_sensor_str(pin, "dr") == "1"
+    
+    # RFID
+    def config_rfid(self, rxPin, txPin):
+        self._send(f"config:rfid={rxPin},{txPin}")
+
+    def rfid_card_number(self):
+        sensedata = self._find_sensor_str("0", "rfid")
+        datum = sensedata.split("-")
+        print(sensedata, datum)
+        return datum[0] if len(datum) == 2 else ""
+
+    def rfid_tag_number(self):
+        sensedata = self._find_sensor_str("0", "rfid")
+        datum = sensedata.split("-")
+        print(sensedata, datum)
+        return datum[1] if len(datum) == 2 else ""
+
     
     # Motion Sensors
     def config_motion_sensor(self, echoPin, trigPin):
