@@ -84,17 +84,11 @@ class ElectroBlocks:
     def config_rfid(self, rxPin, txPin):
         self._send(f"config:rfid={rxPin},{txPin}")
 
-    def rfid_card_number(self):
-        sensedata = self._find_sensor_str("0", "rfid")
-        datum = sensedata.split("-")
-        print(sensedata, datum)
-        return datum[0] if len(datum) == 2 else ""
-
     def rfid_tag_number(self):
-        sensedata = self._find_sensor_str("0", "rfid")
-        datum = sensedata.split("-")
-        print(sensedata, datum)
-        return datum[1] if len(datum) == 2 else ""
+        return self._find_sensor_str("0", "rfid")
+
+    def rfid_sensed_card(self):
+        return len(self._find_sensor_str("0", "rfid")) > 0
 
     
     # Motion Sensors
