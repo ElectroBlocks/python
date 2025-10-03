@@ -11,6 +11,17 @@ class ComponentPins(Enum):
     ANALOG_WRITE = 4
     RGB_LED_STRIP = 5
     SERVO = 6
+    LED_MATRIX = 7
+    DIGITAL_DISPLAY_TM = 8
+    MOTOR = 9
+    PASSIVE_BUZZER = 10
+    STEPPER_MOTOR = 11
+    BUTTON = 12
+    IR_REMOTE = 13
+    DIGITAL_READ = 14
+    JOYSTICK = 16
+    ULTRASONIC_SENSOR = 17
+    RFID = 18
 
 class ElectroBlocks:
 
@@ -18,15 +29,20 @@ class ElectroBlocks:
     verbose = False
     pins = {}
 
+
+
     def __init__(self, baudrate=115200, timeout=2, verbose = False):
         self.ser = self._auto_connect(baudrate, timeout)
         self.verbose = verbose
         self._wait_for_ready()
-    
+        self._cache = None
+        self._cache_time = 0
+        self._cache_ttl = 0.08  # 80 milliseconds
+ 
     def _auto_connect(self, baudrate, timeout):
         ports = list(serial.tools.list_ports.comports())
         for p in ports:
-            if (p.vid == 9025 and p.pid in (67, 16)) or (p.vid == 6790): # Arduino Uno or Mega and Indian Arduino UNO
+            if p.vid in (9025, 6790, 4292) or p.pid in (67, 16, 60000): # Arduino Uno or Mega and Indian Arduino UNO
                 try:
                     ser = serial.Serial(p.device, baudrate, timeout=timeout)
                     time.sleep(2)  # Give Arduino time to reset
@@ -63,12 +79,26 @@ class ElectroBlocks:
         return ""
 
     def _get_sensor_str(self):
+        now = time.monotonic()
+        
+        # If cached value is still fresh, return it
+        if self._cache and (now - self._cache_time) < self._cache_ttl:
+            if self.verbose:
+                print("Using cached sensor message")
+            return self._cache
+        
+        # Otherwise fetch new data
         self.ser.write(b"sense|")
         message = self._wait_for_message("SENSE_COMPLETE")
         if self.verbose:
-            print(f"FULL SENSOR MESSSAGE: {message}")
+            print(f"FULL SENSOR MESSAGE: {message}")
         message = message.replace("SENSE_COMPLETE", "")
         sensorsStr = message.split(";")
+
+        # Update cache
+        self._cache = sensorsStr
+        self._cache_time = now
+
         return sensorsStr
     
     # return the result of pin read that is being sensed
@@ -93,45 +123,84 @@ class ElectroBlocks:
 
     # Digital Write Method
     def config_digital_read(self, pin):
-        self._send(f"config:b={pin}")
+        self._add_pin(ComponentPins.DIGITAL_READ, pin)
+        self._send(f"register::dr::{pin}")
 
     def digital_read(self, pin):
         return self._find_sensor_str(pin, "dr") == "1"
     
     # RFID
     def config_rfid(self, rxPin, txPin):
-        self._send(f"config:rfid={rxPin},{txPin}")
+        self._add_pin(ComponentPins.RFID, rxPin)
+        self._add_pin(ComponentPins.RFID, txPin)
+        self._send(f"register::rfi::{rxPin}::{txPin}::9600")
 
     def rfid_tag_number(self):
-        return self._find_sensor_str("0", "rfid")
+        pin = self.pins[ComponentPins.RFID][0]
+        tag = self._find_sensor_str(pin, "rfi")
+        if tag == "0":
+            return ""
+        else:
+            return tag
 
     def rfid_sensed_card(self):
-        return len(self._find_sensor_str("0", "rfid")) > 0
+        pin = self.pins[ComponentPins.RFID][0]
+        return self._find_sensor_str(pin, "rfi") != "0"
     
+    # Joysick
+    def config_joystick(self, x, y, sw):
+        self._send(f"register::js::{x}::{y}::{sw}")
+        self._add_pin(ComponentPins.JOYSTICK, x)
+        self._add_pin(ComponentPins.JOYSTICK, y)
+        self._add_pin(ComponentPins.JOYSTICK, sw)
+
+    def joystick_angle(self):
+        pin = self.pins[ComponentPins.JOYSTICK][0]
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        return angle
+
+    def is_joystick_button_pressed(self):
+        pin = self.pins[ComponentPins.JOYSTICK][0]
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        return pressed
+
+    def is_joystick_engaged(self):
+        pin = self.pins[ComponentPins.JOYSTICK][0]
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        return pressed
+
+
     #IR Remote
 
     def config_ir_remote(self, pin):
-        self._send(f"config:ir={pin}")
+        self._send(f"register::ir::{pin}")
+        self._add_pin(ComponentPins.IR_REMOTE, pin)
 
     def ir_remote_has_sensed_code(self):
-        return len(self._find_sensor_str("0", "ir")) > 0
+        pin = self.pins[ComponentPins.IR_REMOTE][0]
+        return len(self._find_sensor_str(pin, "ir")) > 0
     
     def ir_remote_get_code(self):
-        return self._find_sensor_str("0", "ir")
+        pin = self.pins[ComponentPins.IR_REMOTE][0]
+        return self._find_sensor_str(pin, "ir")
 
     # Motion Sensors
     def config_motion_sensor(self, echoPin, trigPin):
-        self._send(f"config:m={echoPin},{trigPin}")
+        self._add_pin(ComponentPins.ULTRASONIC_SENSOR, trigPin)
+        self._add_pin(ComponentPins.ULTRASONIC_SENSOR, echoPin)
+        self._send(f"register::ul::{trigPin}::{echoPin}")
 
     def motion_distance_cm(self):
-        return self._find_sensor_str("0", "m")
+        pin = self.pins[ComponentPins.ULTRASONIC_SENSOR][0]
+        return self._find_sensor_str(pin, "ul")
 
     # Button Methods
     def config_button(self, pin):
-        self._send(f"config:b={pin}")
+        self._send(f"register:bt::{pin}")
+        self._add_pin(ComponentPins.BUTTON, pin)
 
     def is_button_pressed(self, pin):
-        return self._find_sensor_str(pin, "b") == "0"
+        return self._find_sensor_str(pin, "bt") == "0"
 
     # Servo Methods
     def config_servo(self, pin):
@@ -197,6 +266,69 @@ class ElectroBlocks:
         self._send(f"register::aw::{pin}")
         self._add_pin(ComponentPins.ANALOG_WRITE, pin)
 
+    # LED MATRIX
+
+    def config_led_matrix(self, data_pin, cs_pin, clk_pin):
+        self._add_pin(ComponentPins.LED_MATRIX, data_pin)
+        self._add_pin(ComponentPins.LED_MATRIX, cs_pin)
+        self._add_pin(ComponentPins.LED_MATRIX, clk_pin)
+        self._send(f"register::ma::{data_pin}::{cs_pin}::{clk_pin}")
+
+    def set_led_matrix_led(self, row, col, isOn):
+        pin = self.pins[ComponentPins.LED_MATRIX][0]
+        isLedOnNumber = "1" if isOn else "0"
+        self._send(f"write::ma::{pin}::1::{col - 1}::{8 - row}::{isLedOnNumber}")
+    
+    # TM Digital Display
+
+    def config_digital_display(self, dio, clk):
+        self._add_pin(ComponentPins.DIGITAL_DISPLAY_TM, dio)
+        self._add_pin(ComponentPins.DIGITAL_DISPLAY_TM, clk)
+        self._send(f"register::tm::{dio}::{clk}")
+
+    def set_digital_display(self, colonOn, message):
+        pin = self.pins[ComponentPins.DIGITAL_DISPLAY_TM][0]
+        colon = "1" if colonOn else "0"
+        self._send(f"write::tm::{pin}::{colon}::{message}")
+
+    # Stepper Motors
+
+    def config_stepper_motor(self, pin1, pin2, pin3, pin4, steps, speed):
+        self._add_pin(ComponentPins.STEPPER_MOTOR, pin1)
+        self._add_pin(ComponentPins.STEPPER_MOTOR, pin2)
+        self._add_pin(ComponentPins.STEPPER_MOTOR, pin3)
+        self._add_pin(ComponentPins.STEPPER_MOTOR, pin4)
+        self._send(f"register::ste::{pin1}::{pin2}::{pin3}::{pin4}::{steps}::{speed}")
+
+    def move_stepper_motor(self, steps):
+        pin = self.pins[ComponentPins.STEPPER_MOTOR][0]
+        self._send(f"write::ste::{pin}::{steps}")
+
+
+    # Motors
+
+    def config_motor(self, en1, in1, in2, en2 = None, in3 = None, in4 = None):
+        self._add_pin(ComponentPins.MOTOR, en1)
+        self._add_pin(ComponentPins.MOTOR, in1)
+        self._add_pin(ComponentPins.MOTOR, in2)
+        if en2 == None or in3 == None or in4 == None:
+            self._send(f"register::mo::{en1}::{in1}::{in2}")
+        else:
+            self._add_pin(ComponentPins.MOTOR, en2)
+            self._add_pin(ComponentPins.MOTOR, in3)
+            self._add_pin(ComponentPins.MOTOR, in4)
+            self._send(f"register::mo::{en1}::{in1}::{in2}::{en2}::{in3}::{in4}")
+
+    def move_motor(self, which_motor, direction, speed):
+            pin = self.pins[ComponentPins.MOTOR][0]
+            direction_num = "1" if direction == "clockwise" else "2"
+            self._send(f"write::mo::{pin}::{which_motor}::{speed}::{direction_num}")
+
+    
+    def stop_motor(self, which_motor):
+        pin = self.pins[ComponentPins.MOTOR][0]
+        self._send(f"write::mo::{pin}::{which_motor}::0::3")
+
     # NEO PIXELS
 
     def config_rgb_strip(self, pin, count, colorOrderString, brightness):
@@ -222,6 +354,18 @@ class ElectroBlocks:
     def rgb_strip_show_all(self):
         pin = self.pins[ComponentPins.RGB_LED_STRIP][0]
         self._send(f"write::leds::{pin}::1")
+
+    # Passive Buzzer
+
+    def config_passive_buzzer(self, pin):
+        self._add_pin(ComponentPins.PASSIVE_BUZZER, pin)
+        self._send(f"register::bu::{pin}")
+
+    def play_passive_buzzer(self, pin, note):
+        self._send(f"write::bu::{pin}::{note}")
+
+    def turn_off_buzzer(self, pin):
+        self._send(f"write::bu::{pin}::0")
 
     # Helpers
 
