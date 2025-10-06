@@ -21,7 +21,8 @@ class ComponentPins(Enum):
     DIGITAL_READ = 14
     JOYSTICK = 16
     ULTRASONIC_SENSOR = 17
-    RFID = 18
+    RFID = 18,
+    TEMP = 19,
 
 class ElectroBlocks:
 
@@ -156,18 +157,34 @@ class ElectroBlocks:
 
     def joystick_angle(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
-        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
         return angle
 
     def is_joystick_button_pressed(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
-        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
         return pressed
 
     def is_joystick_engaged(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
-        [pressed, angle, engaged] = self._find_sensor_str(pin, "js")
+        [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
         return pressed
+
+    # Temp
+    def config_dht_temp(self, pin, type):
+        tempType = "1" if type == "DHT11" else "2"
+        self._send(f"register::dht::{pin}::{tempType}")
+        self._add_pin(ComponentPins.TEMP, pin)
+
+    def dht_temp_celcius(self):
+        pin = self.pins[ComponentPins.TEMP][0]
+        [humidity, temp] = self._find_sensor_str(pin, "dht").split('-')
+        return temp
+
+    def dht_temp_humidity(self):
+        pin = self.pins[ComponentPins.TEMP][0]
+        [humidity, temp] = self._find_sensor_str(pin, "dht").split('-')
+        return humidity
 
 
     #IR Remote
