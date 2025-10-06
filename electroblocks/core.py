@@ -23,6 +23,8 @@ class ComponentPins(Enum):
     ULTRASONIC_SENSOR = 17
     RFID = 18,
     TEMP = 19,
+    THERMISTOR = 20
+
 
 class ElectroBlocks:
 
@@ -186,6 +188,23 @@ class ElectroBlocks:
         [humidity, temp] = self._find_sensor_str(pin, "dht").split('-')
         return humidity
 
+    # Thermistor
+
+    def config_thermistor(self, pin):
+        self._send(f"register::th::{pin}")
+        self._add_pin(ComponentPins.THERMISTOR, pin)
+
+    def thermistor_celsius(self):
+        pin = self.pins[ComponentPins.THERMISTOR][0]
+        return self._find_sensor_str(pin, "th")
+
+    def thermistor_fahrenheit(self):
+        pin = self.pins[ComponentPins.THERMISTOR][0]
+        temp = self._find_sensor_str(pin, "th")
+        if (temp == ''):
+            return ''
+        else:
+            return 32 + (9/5 * float(temp))
 
     #IR Remote
 
