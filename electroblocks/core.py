@@ -32,7 +32,28 @@ class ElectroBlocks:
     verbose = False
     pins = {}
 
+    # Known vendor IDs (decimal) 
+    KNOWN_VIDS = {
+        9025,   # 0x2341 - Arduino
+        6790,   # 0x1A86 - WCH (CH340/CH341)
+        4292,   # 0x10C4 - Silicon Labs (CP210x)
+        1027,   # 0x0403 - FTDI
+        1659,   # 0x067B - Prolific
+    }
 
+    # Known product IDs (decimal)
+    KNOWN_PIDS = {
+        67,       # 0x0043 - Uno R3 PID
+        66,       # 0x0042 - Mega R3 PID (common variant)
+        16,       # 0x0010 - Mega2560 pre-R3
+        60000,    # 0xEA60 - CP210x example (Silicon Labs)
+        29987,    # 0x7523 - CH340 common PID
+        24577,    # 0x6001 - FTDI FT232
+        24592,    # 0x6010 - FTDI FT2232
+        24593,    # 0x6011 - FTDI FT4232
+        24596,    # 0x6014 - FTDI variant
+        24597,    # 0x6015 - FTDI FT231X
+    }
 
     def __init__(self, baudrate=115200, timeout=2, verbose = False):
         self.ser = self._auto_connect(baudrate, timeout)
@@ -45,7 +66,7 @@ class ElectroBlocks:
     def _auto_connect(self, baudrate, timeout):
         ports = list(serial.tools.list_ports.comports())
         for p in ports:
-            if p.vid in (9025, 6790, 4292) or p.pid in (67, 16, 60000): # Arduino Uno or Mega and Indian Arduino UNO
+            if p.vid in self.KNOWN_VIDS or p.pid in self.KNOWN_VIDS: 
                 try:
                     ser = serial.Serial(p.device, baudrate, timeout=timeout)
                     time.sleep(2)  # Give Arduino time to reset
