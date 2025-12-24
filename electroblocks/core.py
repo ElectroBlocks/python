@@ -24,6 +24,7 @@ class ComponentPins(Enum):
     RFID = 18,
     TEMP = 19,
     THERMISTOR = 20
+    ANALOG_WRITE = 21
 
 
 class ElectroBlocks:
@@ -145,14 +146,7 @@ class ElectroBlocks:
         self.ser.write((cmd + "|\n").encode())
         self._wait_for_message("OK")
 
-    # Digital Write Method
-    def config_digital_read(self, pin):
-        self._add_pin(ComponentPins.DIGITAL_READ, pin)
-        self._send(f"register::dr::{pin}")
 
-    def digital_read(self, pin):
-        return self._find_sensor_str(pin, "dr") == "1"
-    
     # RFID
     def config_rfid(self, rxPin, txPin):
         self._add_pin(ComponentPins.RFID, rxPin)
@@ -279,8 +273,8 @@ class ElectroBlocks:
 
     # LCD Methods
     def config_lcd(self, rows=2, cols=16, addr=39):
-        self._add_pin(ComponentPins.DIGITAL_WRITE, "A5")
-        self._add_pin(ComponentPins.DIGITAL_WRITE, "A4")
+        self._add_pin(ComponentPins.LCD, "A5")
+        self._add_pin(ComponentPins.LCD, "A4")
         self._send(f"register::lcd::{rows}::{cols}::{addr}")
 
     def lcd_print(self, row, col, message):
@@ -307,9 +301,21 @@ class ElectroBlocks:
     def lcd_scrollleft(self):
         self._send("write::lcd::A5::7")
 
-    # LED Methods
+    # Pins
 
-    def digital_config(self, pin):
+    def analog_write_config(self, pin):
+        self._send(f"register::aw::{pin}")
+        self._add_pin(ComponentPins.ANALOG_WRITE, pin)
+
+    def analog_read_config(self, pin):
+        self._send(f"register::ar::{pin}")
+        self._add_pin(ComponentPins.ANALOG_WRITE, pin)
+
+    def config_digital_read(self, pin):
+        self._add_pin(ComponentPins.DIGITAL_READ, pin)
+        self._send(f"register::dr::{pin}")
+
+    def digital_write_config(self, pin):
         self._add_pin(ComponentPins.DIGITAL_WRITE, pin)
         self._send(f"register::dw::{pin}")
 
@@ -319,9 +325,13 @@ class ElectroBlocks:
     def analog_write(self, pin, value):
         self._send(f"write::aw::{pin}::{value}")
     
-    def analog_config(self, pin):
-        self._send(f"register::aw::{pin}")
-        self._add_pin(ComponentPins.ANALOG_WRITE, pin)
+
+    def digital_read(self, pin):
+        return self._find_sensor_str(pin, "dr") == "1"
+    
+    def analog_read(self, pin):
+        return self._find_sensor_str(pin, "ar")
+
 
     # LED MATRIX
 

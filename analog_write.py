@@ -7,7 +7,7 @@ import time # imports the time library
 
 # Initialise the program settings and configurations
 eb = ElectroBlocks(verbose=True) # Create an instance of the ElectroBlocks class
-eb.analog_config(6)
+eb.analog_write_config(6)
 
 for i in range(1, 200):
   eb.analog_write(6, i)
