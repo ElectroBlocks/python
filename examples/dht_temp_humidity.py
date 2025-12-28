@@ -9,7 +9,7 @@ import time # imports the time library
 # Initialise the program settings and configurations
 
 eb = ElectroBlocks() # Create an instance of the ElectroBlocks class
-eb.config_dht_temp(4, "DHT11")
+eb.config_dht_temp(6, "DHT11")
 
 for _ in range(1, 4):
     temp = eb.dht_temp_celcius()

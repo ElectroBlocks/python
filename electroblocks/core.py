@@ -24,8 +24,6 @@ class ComponentPins(Enum):
     RFID = 18,
     TEMP = 19,
     THERMISTOR = 20
-    ANALOG_WRITE = 21
-
 
 class ElectroBlocks:
 
@@ -275,7 +273,7 @@ class ElectroBlocks:
     def config_lcd(self, rows=2, cols=16, addr=39):
         self._add_pin(ComponentPins.LCD, "A5")
         self._add_pin(ComponentPins.LCD, "A4")
-        self._send(f"register::lcd::{rows}::{cols}::{addr}")
+        self._send(f"register::lcd::A5::{rows}::{cols}::{addr}")
 
     def lcd_print(self, row, col, message):
         self._send(f"write::lcd::A5::9::{row}::{col}::{message}")
@@ -300,6 +298,13 @@ class ElectroBlocks:
 
     def lcd_scrollleft(self):
         self._send("write::lcd::A5::7")
+
+    def lcd_print_all_2(self, row1, row2):
+        self._send(f"write::lcd::A5::8::{row1}::{row2}")
+
+    def lcd_print_all_4(self, row1, row2, row3, row4):
+        self._send(f"write::lcd::A5::8::{row1}::{row2}::{row3}::{row4}")
+
 
     # Pins
 
@@ -335,16 +340,22 @@ class ElectroBlocks:
 
     # LED MATRIX
 
-    def config_led_matrix(self, data_pin, cs_pin, clk_pin):
+    def config_led_matrix(self, data_pin, cs_pin, clk_pin, is_breadboard):
         self._add_pin(ComponentPins.LED_MATRIX, data_pin)
         self._add_pin(ComponentPins.LED_MATRIX, cs_pin)
         self._add_pin(ComponentPins.LED_MATRIX, clk_pin)
-        self._send(f"register::ma::{data_pin}::{cs_pin}::{clk_pin}")
+        is_breadboard_arduino = "1" if is_breadboard else "0"
+        self._send(f"register::ma::{data_pin}::{cs_pin}::{clk_pin}::{is_breadboard_arduino}")
 
     def set_led_matrix_led(self, row, col, isOn):
         pin = self.pins[ComponentPins.LED_MATRIX][0]
         isLedOnNumber = "1" if isOn else "0"
-        self._send(f"write::ma::{pin}::1::{col - 1}::{8 - row}::{isLedOnNumber}")
+        self._send(f"write::ma::{pin}::1::{col}::{row}::{isLedOnNumber}")
+
+    def draw_led_matrix(self, rows):
+        pin = self.pins[ComponentPins.LED_MATRIX][0]
+        self._send(f"write::ma::{pin}::2::" + "::".join(rows))
+
     
     # TM Digital Display
 
@@ -400,14 +411,18 @@ class ElectroBlocks:
 
     def config_rgb_strip(self, pin, count, colorOrderString, brightness):
         orderToNumber = {
-            "RGB": 128,
-            "GRB": 129,
-            "RBG": 130,
-            "GBR": 131,
-            "BRG": 132,
-            "BGR": 133,
+            "RGB": 80,
+            "GRB": 81,
+            "RBG": 82,
+            "GBR": 83,
+            "BRG": 84,
+            "BGR": 85,
+            "BGR": 85,
+            "RGBW": 86,
+            "GRBW": 87,
+            "WRGB": 88,
         }
-        colorOrder = orderToNumber.get(colorOrderString) or 128
+        colorOrder = orderToNumber.get(colorOrderString) or 81
         self._add_pin(ComponentPins.RGB_LED_STRIP, pin)
         self._send(f"register::leds::{pin}::{count}::{colorOrder}::{brightness}")
 
@@ -416,11 +431,37 @@ class ElectroBlocks:
         """Set color for RGB LED strip at specified position"""
         pin = self.pins[ComponentPins.RGB_LED_STRIP][0]
         color = self.rgb_to_hex(red, green, blue)
-        self._send(f"write::leds::{pin}::2::{position}::{color}")
+        self._send(f"write::leds::{pin}::3::{position}::{color}")
+
+    def rgb_strip_set_all_colors(self, colors):
+        """
+        Sets all the colors in an RGB LED strip.
+
+        colors: list of (r, g, b) tuples, each 0–255
+        """
+        if not colors:
+            return
+
+        pin = self.pins[ComponentPins.RGB_LED_STRIP][0]
+
+        # Build RRGGBB stream
+        hex_stream = []
+        for (r, g, b) in colors:
+            # Clamp defensively (kids / callers make mistakes)
+            r = max(0, min(255, int(r)))
+            g = max(0, min(255, int(g)))
+            b = max(0, min(255, int(b)))
+            hex_stream.append(f"{r:02X}{g:02X}{b:02X}")
+
+        payload = "".join(hex_stream)
+        self._send(f"write::leds::{pin}::2::{payload}")
+
 
     def rgb_strip_show_all(self):
         pin = self.pins[ComponentPins.RGB_LED_STRIP][0]
         self._send(f"write::leds::{pin}::1")
+    
+
 
     # Passive Buzzer
 
