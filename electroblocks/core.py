@@ -397,7 +397,7 @@ class ElectroBlocks:
             self._add_pin(ComponentPins.MOTOR, in4)
             self._send(f"register::mo::{en1}::{in1}::{in2}::{en2}::{in3}::{in4}")
 
-    def move_motor(self, which_motor, direction, speed):
+    def move_motor(self, which_motor, speed, direction):
             pin = self.pins[ComponentPins.MOTOR][0]
             direction_num = "1" if direction == "clockwise" else "2"
             self._send(f"write::mo::{pin}::{which_motor}::{speed}::{direction_num}")

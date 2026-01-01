@@ -9,7 +9,7 @@ import time # imports the time library
 # Initialise the program settings and configurations
 
 eb = ElectroBlocks() # Create an instance of the ElectroBlocks class
-eb.config_digital_display(11, 10)
+eb.config_digital_display(10, 11)
 
 for _ in range(1, 4):
     eb.set_digital_display(True, "1234")
