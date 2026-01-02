@@ -88,15 +88,15 @@ class ElectroBlocks:
             self.pins[pinType].append(str(pin))
 
 
-    def _wait_for_message(self, message):
+    def _wait_for_message(self, message, wait_time = 0.005):
         count = 0
-        while count < 10:
+        while count < 100:
             if self.ser.in_waiting:
                 line = self.ser.readline().decode("utf-8", errors="ignore").strip()
                 if message in line:
                     return line
             count += 1
-            time.sleep(0.05)
+            time.sleep(wait_time)
         if self.verbose:
             print(f"DEBUG: MESSAGE NOT FOUND: '{message}'")
         return ""
@@ -140,9 +140,9 @@ class ElectroBlocks:
         self.ser.write(b"IAM_READY|")
         self._wait_for_message("System:READY")
 
-    def _send(self, cmd):
+    def _send(self, cmd, wait_time = 0.005):
         self.ser.write((cmd + "|\n").encode())
-        self._wait_for_message("OK")
+        self._wait_for_message("OK", wait_time)
 
 
     # RFID
@@ -380,7 +380,9 @@ class ElectroBlocks:
 
     def move_stepper_motor(self, steps):
         pin = self.pins[ComponentPins.STEPPER_MOTOR][0]
-        self._send(f"write::ste::{pin}::{steps}")
+        # For Stepper motors this can take 
+        # a long time so the wait should be longer.
+        self._send(f"write::ste::{pin}::{steps}", 0.1)
 
 
     # Motors
