@@ -245,11 +245,13 @@ class ElectroBlocks:
 
     # Button Methods
     def config_button(self, pin):
-        self._send(f"register:bt::{pin}")
+        self._send(f"register::bt::{pin}")
         self._add_pin(ComponentPins.BUTTON, pin)
 
     def is_button_pressed(self, pin):
-        return self._find_sensor_str(pin, "bt") == "0"
+        # The firmware will return 1 if the pin is LOW
+        # This works because we always use pullup resistor.
+        return self._find_sensor_str(pin, "bt") == "1"
 
     # Servo Methods
     def config_servo(self, pin):
