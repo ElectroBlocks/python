@@ -194,12 +194,12 @@ class ElectroBlocks:
     def dht_temp_celcius(self):
         pin = self.pins[ComponentPins.TEMP][0]
         [humidity, temp] = self._find_sensor_str(pin, "dht").split('-')
-        return temp
+        return float(temp)
 
     def dht_temp_humidity(self):
         pin = self.pins[ComponentPins.TEMP][0]
         [humidity, temp] = self._find_sensor_str(pin, "dht").split('-')
-        return humidity
+        return float(humidity)
 
     # Thermistor
 
@@ -209,15 +209,12 @@ class ElectroBlocks:
 
     def thermistor_celsius(self):
         pin = self.pins[ComponentPins.THERMISTOR][0]
-        return self._find_sensor_str(pin, "th")
+        return float(self._find_sensor_str(pin, "th"))
 
     def thermistor_fahrenheit(self):
         pin = self.pins[ComponentPins.THERMISTOR][0]
         temp = self._find_sensor_str(pin, "th")
-        if (temp == ''):
-            return ''
-        else:
-            return 32 + (9/5 * float(temp))
+        return float(32 + (9/5 * float(temp)))
 
     #IR Remote
 
