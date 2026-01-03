@@ -173,17 +173,17 @@ class ElectroBlocks:
     def joystick_angle(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
         [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
-        return angle
+        return float(angle)
 
     def is_joystick_button_pressed(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
         [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
-        return pressed
+        return pressed == "1"
 
     def is_joystick_engaged(self):
         pin = self.pins[ComponentPins.JOYSTICK][0]
         [pressed, angle, engaged] = self._find_sensor_str(pin, "js").split('-')
-        return pressed
+        return engaged == "1"
 
     # Temp
     def config_dht_temp(self, pin, type):
@@ -231,7 +231,10 @@ class ElectroBlocks:
     
     def ir_remote_get_code(self):
         pin = self.pins[ComponentPins.IR_REMOTE][0]
-        return self._find_sensor_str(pin, "ir")
+        command = self._find_sensor_str(pin, "ir")
+        if (command == ''):
+            return 0
+        return int(command)
 
     # Motion Sensors
     def config_motion_sensor(self, echoPin, trigPin):

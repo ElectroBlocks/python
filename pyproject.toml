@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "electroblocks"
-version = "0.1.20"
+version = "0.1.21"
 description = "Python client library to interact with ElectroBlocks Arduino firmware"
 authors = [
     { name = "Noah Glaser", email = "glaserpower@gmail.com" }
