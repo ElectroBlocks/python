@@ -244,7 +244,7 @@ class ElectroBlocks:
 
     def motion_distance_cm(self):
         pin = self.pins[ComponentPins.ULTRASONIC_SENSOR][0]
-        return self._find_sensor_str(pin, "ul")
+        return float(self._find_sensor_str(pin, "ul"))
 
     # Button Methods
     def config_button(self, pin):
