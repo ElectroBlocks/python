@@ -337,7 +337,7 @@ class ElectroBlocks:
         return self._find_sensor_str(pin, "dr") == "1"
     
     def analog_read(self, pin):
-        return self._find_sensor_str(pin, "ar")
+        return float(self._find_sensor_str(pin, "ar"))
 
 
     # LED MATRIX
