@@ -1,17 +1,14 @@
-#Import ElectroBlocks library
 from electroblocks import ElectroBlocks
-import time # imports the time library
-
-
-# Variable Declaration
-
 
 # Initialise the program settings and configurations
 eb = ElectroBlocks() # Create an instance of the ElectroBlocks class
-eb.config_motion_sensor(10, 11) # Echo and Trig
+eb.config_motion_sensor(10, 11) # Setup Motion Sensor. EchoPin = 10 TrigPin = 11
+eb.digital_write_config(13)
 
-for _ in range(1, 4):
-  cm = eb.motion_distance_cm()
-  print(f"Distance: {cm} centimeters")
-  time.sleep(1)
-  print("CONTINUE")
+
+
+while True:
+  if (eb.motion_distance_cm() < (2 * 3)):
+    eb.digital_write(13, 1) # Turns the led on
+  else:
+    eb.digital_write(13, 0) # Turns the led off
